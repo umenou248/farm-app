@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="農場管理">
+<meta name="theme-color" content="#1b4332">
+<link rel="manifest" href="manifest.json">
+<title>農場管理アプリ</title>
+<style>
+:root{--g1:#1b4332;--g2:#2d6a4f;--g3:#40916c;--g4:#74c69d;--g5:#d8f3dc;
+  --amber:#f59e0b;--amber-bg:#fef3c7;--red:#dc2626;--red-bg:#fee2e2;
+  --blue:#2563eb;--blue-bg:#dbeafe;--brown:#92400e;--brown-bg:#fef3c7;
+  --text:#111827;--muted:#6b7280;--border:#e5e7eb;--bg:#f0fdf4;--card:#fff;
+  --r:14px;--shadow:0 2px 10px rgba(0,0,0,.07)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available}
+
+.hdr{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;
+  padding:14px 16px 12px;padding-top:max(14px,env(safe-area-inset-top));
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:56px}
+.hdr-title{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.hdr-sub{font-size:11px;opacity:.75;margin-top:2px}
+.back-btn{background:none;border:none;color:#fff;font-size:15px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:4px;padding:4px 0;white-space:nowrap}
+
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px;-webkit-overflow-scrolling:touch}
+
+.bnav{display:flex;background:#fff;border-top:1px solid var(--border);
+  padding:4px 0;padding-bottom:max(4px,env(safe-area-inset-bottom));flex-shrink:0}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:6px 4px;cursor:pointer;border-radius:10px;margin:2px}
+.bnav-item.active{color:var(--g2)}.bnav-item:not(.active){color:var(--muted)}
+.bnav-icon{font-size:22px;line-height:1}
+.bnav-label{font-size:10px;margin-top:2px;font-weight:500}
+
+.dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);
+  overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+.dtabs::-webkit-scrollbar{display:none}
+.dtab{flex-shrink:0;padding:10px 14px;font-size:13px;font-weight:500;
+  cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.dtab.active{color:var(--g2);border-bottom-color:var(--g2);font-weight:700}
+
+.screen{display:none}.screen.active{display:block;animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.view{display:none}.view.active{display:block}
+
+.card{background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+
+.crop-card{background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;
+  box-shadow:var(--shadow);border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:flex-start;gap:12px;transition:all .15s}
+.crop-card:active{transform:scale(.98);background:#f9fafb}
+.crop-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:28px;flex-shrink:0}
+.crop-body{flex:1;min-width:0}
+.crop-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.crop-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--card);border-radius:var(--r);padding:12px;text-align:center;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.stat-val{font-size:20px;font-weight:700;color:var(--g2)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.b-green{background:var(--g5);color:var(--g1)}.b-amber{background:var(--amber-bg);color:#92400e}
+.b-blue{background:var(--blue-bg);color:#1e40af}.b-red{background:var(--red-bg);color:#991b1b}
+.b-brown{background:#fef9c3;color:#713f12}.b-gray{background:#f3f4f6;color:#374151}
+.b-purple{background:#ede9fe;color:#5b21b6}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;
+  border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--g2);color:#fff}.btn-primary:active{background:var(--g1);transform:scale(.97)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-icon{padding:7px;border-radius:10px;background:var(--g5);color:var(--g2)}
+.btn-danger{background:var(--red-bg);color:var(--red)}.btn-cancel{background:#f3f4f6;color:var(--text)}
+.btn-full{width:100%;justify-content:center}
+
+.fg{margin-bottom:12px}
+.fl{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:4px;display:block}
+.fi,.fs,.ft{width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid var(--border);
+  font-size:14px;background:#fff;color:var(--text);outline:none;transition:border-color .2s;font-family:inherit}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--g2)}
+.ft{resize:vertical;min-height:75px}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;
+  display:flex;align-items:flex-end;justify-content:center}
+.overlay.hidden{display:none}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:92vh;
+  overflow-y:auto;padding:20px 16px;
+  padding-bottom:max(20px,env(safe-area-inset-bottom));animation:slideup .3s ease}
+@keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:#d1d5db;border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1;justify-content:center}
+
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--g5)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-dot{position:absolute;left:-22px;top:12px;width:12px;height:12px;border-radius:50%;
+  background:var(--g3);border:2px solid #fff;box-shadow:0 0 0 2px var(--g3)}
+.tl-dot.prep{background:var(--amber)}
+.tl-card{background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.tl-date{font-size:11px;color:var(--muted);margin-bottom:4px}
+.tl-stage{font-size:13px;font-weight:600;margin-bottom:4px}
+.tl-notes{font-size:13px;color:#374151;line-height:1.5}
+.tl-photos{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.tl-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer}
+
+.li{background:var(--card);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;
+  box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.li-icon{font-size:26px;flex-shrink:0}
+.li-body{flex:1;min-width:0}
+.li-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.li-sub{font-size:12px;color:var(--muted)}
+.li-actions{display:flex;gap:6px;flex-shrink:0}
+
+.plan-item{background:var(--card);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;
+  box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.plan-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+  flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:12px}
+.plan-check.done{background:var(--g3);border-color:var(--g3);color:#fff}
+.plan-overdue{border-left:3px solid var(--red)}.plan-upcoming{border-left:3px solid var(--amber)}
+.plan-done-item{opacity:.55}
+
+.cal{background:#fff;border-radius:var(--r);padding:12px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav{background:var(--g5);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--g1);font-size:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dh{text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+.cal-d{text-align:center;padding:6px 0;border-radius:8px;cursor:pointer;font-size:13px;position:relative;transition:all .15s}
+.cal-d:hover{background:var(--g5)}.cal-d.today{background:var(--g2);color:#fff;font-weight:700}
+.cal-d.sel{background:var(--g5);color:var(--g1);font-weight:700}
+.cal-d.has-ev::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--amber)}
+.cal-d.today.has-ev::after{background:#fff}.cal-d.om{color:#d1d5db}
+
+.review-year-card{background:var(--card);border-radius:var(--r);padding:14px;margin-bottom:10px;
+  box-shadow:var(--shadow);border-left:4px solid var(--g3)}
+.ry-title{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--g1)}
+.ry-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.ry-row:last-child{border:none}.ry-key{font-size:13px;color:var(--muted)}.ry-val{font-size:13px;font-weight:600}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sec{font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+.empty{text-align:center;padding:36px 20px;color:var(--muted)}
+.empty-ico{font-size:44px;margin-bottom:10px}.empty-txt{font-size:14px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--g1);color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:13px;font-weight:500;z-index:300;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.viewer{position:fixed;inset:0;background:#000;z-index:400;display:flex;align-items:center;justify-content:center}
+.viewer.hidden{display:none}
+.viewer img{max-width:100%;max-height:100%}
+.viewer-close{position:absolute;top:20px;right:20px;background:rgba(0,0,0,.6);border:none;color:#fff;
+  border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr" id="hdr">
+    <div id="hdr-left"><div class="hdr-title">🌾 農場管理</div><div class="hdr-sub" id="hdr-date"></div></div>
+    <div id="hdr-right"></div>
+  </div>
+  <div class="dtabs" id="dtabs" style="display:none">
+    <div class="dtab active" data-tab="diary" onclick="switchDTab('diary',this)">📒 日誌</div>
+    <div class="dtab" data-tab="prep" onclick="switchDTab('prep',this)">🚜 圃場準備</div>
+    <div class="dtab" data-tab="inputs" onclick="switchDTab('inputs',this)">💊 農薬・肥料</div>
+    <div class="dtab" data-tab="harvest" onclick="switchDTab('harvest',this)">🚚 収穫・出荷</div>
+    <div class="dtab" data-tab="plan" onclick="switchDTab('plan',this)">📅 作付計画</div>
+    <div class="dtab" data-tab="overview" onclick="switchDTab('overview',this)">📊 概要</div>
+  </div>
+  <div class="content" id="content">
+
+    <!-- 作物一覧 -->
+    <div class="screen active" id="sc-crops">
+      <div id="crop-stats-row"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec" style="margin:0">栽培中・計画中</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mo-crop')">＋ 作物を登録</button>
+      </div>
+      <div id="crop-list-active"></div>
+      <div id="past-crops-section"></div>
+    </div>
+
+    <!-- 作物詳細 -->
+    <div class="screen" id="sc-detail">
+      <div class="view active" id="vw-diary">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('mo-diary')">＋ 日誌を追加</button>
+        </div>
+        <div id="diary-list"></div>
+      </div>
+      <!-- 圃場準備 -->
+      <div class="view" id="vw-prep">
+        <div class="card" style="background:var(--amber-bg);border-color:var(--amber)">
+          <div style="font-size:13px;color:var(--brown)">🚜 耕うん・土づくりなど播種・定植前の圃場作業を記録します</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('mo-prep')">＋ 作業を記録</button>
+        </div>
+        <div id="prep-list"></div>
+      </div>
+      <div class="view" id="vw-inputs">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('mo-input')">＋ 使用を記録</button>
+        </div>
+        <div id="input-list"></div>
+      </div>
+      <div class="view" id="vw-harvest">
+        <div id="harvest-summary" style="margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('mo-harvest')">＋ 収穫を記録</button>
+        </div>
+        <div id="harvest-list"></div>
+      </div>
+      <div class="view" id="vw-plan">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('mo-plan')">＋ 予定を追加</button>
+        </div>
+        <div id="plan-list"></div>
+      </div>
+      <div class="view" id="vw-overview">
+        <div id="overview-content"></div>
+      </div>
+    </div>
+
+    <!-- カレンダー -->
+    <div class="screen" id="sc-cal">
+      <div class="cal" id="main-cal"></div>
+      <div id="cal-date-label" class="sec"></div>
+      <div id="cal-events"></div>
+    </div>
+
+    <!-- 振り返り -->
+    <div class="screen" id="sc-review">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">📊 作物別・年別の振り返り</div>
+        <div class="fg">
+          <label class="fl">作物名を選択</label>
+          <select class="fs" id="review-crop-sel" onchange="renderReview()"><option value="">選択してください</option></select>
+        </div>
+      </div>
+      <div id="review-content"></div>
+    </div>
+
+    <!-- 圃場 -->
+    <div class="screen" id="sc-fields">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec" style="margin:0">圃場一覧</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mo-field')">＋ 追加</button>
+      </div>
+      <div id="field-list"></div>
+    </div>
+
+  </div>
+  <div class="bnav" id="bnav">
+    <div class="bnav-item active" onclick="goScreen('crops',this)" id="nav-crops"><div class="bnav-icon">🌱</div><div class="bnav-label">作物</div></div>
+    <div class="bnav-item" onclick="goScreen('cal',this)" id="nav-cal"><div class="bnav-icon">📅</div><div class="bnav-label">カレンダー</div></div>
+    <div class="bnav-item" onclick="goScreen('review',this)" id="nav-review"><div class="bnav-icon">📊</div><div class="bnav-label">振り返り</div></div>
+    <div class="bnav-item" onclick="goScreen('fields',this)" id="nav-fields"><div class="bnav-icon">🌾</div><div class="bnav-label">圃場</div></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- 作物登録 -->
+<div class="overlay hidden" id="mo-crop"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-crop-title">🌱 作物を登録</div>
+  <input type="hidden" id="crop-eid">
+  <div class="fg"><label class="fl">作物名 *</label><input class="fi" id="c-name" placeholder="例: トマト、コシヒカリ、キャベツ"></div>
+  <div class="fg"><label class="fl">品種</label><input class="fi" id="c-variety" placeholder="例: 桃太郎、コシヒカリ"></div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">作付年</label><select class="fs" id="c-year"></select></div>
+    <div class="fg"><label class="fl">圃場</label><select class="fs" id="c-field"><option value="">未指定</option></select></div>
+  </div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">播種・定植日</label><input class="fi" type="date" id="c-plant"></div>
+    <div class="fg"><label class="fl">収穫予定日</label><input class="fi" type="date" id="c-harvest-plan"></div>
+  </div>
+  <div class="fg"><label class="fl">状態</label>
+    <select class="fs" id="c-status">
+      <option value="計画中">📋 計画中</option><option value="圃場準備中">🚜 圃場準備中</option>
+      <option value="栽培中" selected>🌿 栽培中</option><option value="収穫期">🍅 収穫期</option>
+      <option value="収穫済">✅ 収穫済</option><option value="終了">🏁 終了</option>
+    </select>
+  </div>
+  <div class="fg"><label class="fl">メモ</label><textarea class="ft" id="c-memo" style="min-height:55px" placeholder="品種特性、前作など..."></textarea></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-crop')">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveCrop()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 生育日誌 -->
+<div class="overlay hidden" id="mo-diary"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-diary-title">📒 生育日誌を追加</div>
+  <input type="hidden" id="diary-eid">
+  <div class="fg"><label class="fl">日付 *</label><input class="fi" type="date" id="d-date"></div>
+  <div class="fg"><label class="fl">生育ステージ</label>
+    <select class="fs" id="d-stage">
+      <option value="🌱 播種">🌱 播種</option><option value="🌿 発芽">🌿 発芽</option>
+      <option value="🪴 育苗">🪴 育苗</option><option value="🌾 成長期">🌾 成長期</option>
+      <option value="🌸 開花">🌸 開花</option><option value="🍅 結実">🍅 結実</option>
+      <option value="🔔 収穫期">🔔 収穫期</option><option value="✅ 収穫完了">✅ 収穫完了</option>
+      <option value="📝 観察・点検">📝 観察・点検</option><option value="⚠️ 病害虫発見">⚠️ 病害虫発見</option>
+    </select>
+  </div>
+  <div class="fg"><label class="fl">観察・メモ</label><textarea class="ft" id="d-notes" placeholder="草丈、葉の状態、病気の兆候など..."></textarea></div>
+  <div class="fg">
+    <label class="fl">写真を追加</label>
+    <label class="btn btn-full" style="cursor:pointer;background:var(--g5);color:var(--g2);">
+      📷 写真を選ぶ・撮る
+      <input type="file" accept="image/*" multiple id="d-photos" style="display:none" onchange="previewPhotos(this,'d-photo-preview')">
+    </label>
+    <div id="d-photo-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-diary')">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveDiary()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 圃場準備 -->
+<div class="overlay hidden" id="mo-prep"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-prep-title">🚜 圃場準備作業を記録</div>
+  <input type="hidden" id="prep-eid">
+  <div class="fg"><label class="fl">日付 *</label><input class="fi" type="date" id="pr-date"></div>
+  <div class="fg"><label class="fl">作業種類 *</label>
+    <select class="fs" id="pr-type">
+      <option value="耕うん（プラウ）">🚜 耕うん（プラウ）</option>
+      <option value="耕うん（ロータリー）">🔄 耕うん（ロータリー）</option>
+      <option value="サブソイラー作業">🔩 サブソイラー作業</option>
+      <option value="土壌分析">🧪 土壌分析</option>
+      <option value="石灰・苦土施用">🪨 石灰・苦土施用</option>
+      <option value="堆肥投入">♻️ 堆肥投入</option>
+      <option value="緑肥すき込み">🌿 緑肥すき込み</option>
+      <option value="畝立て">📏 畝立て</option>
+      <option value="マルチ張り">🎿 マルチ張り</option>
+      <option value="灌水設備設置">💧 灌水設備設置</option>
+      <option value="ハウス準備">🏠 ハウス準備</option>
+      <option value="除草（耕起前）">✂️ 除草（耕起前）</option>
+      <option value="前作残渣処理">♻️ 前作残渣処理</option>
+      <option value="排水溝整備">💦 排水溝整備</option>
+      <option value="その他">📌 その他</option>
+    </select>
+  </div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">使用機械</label><input class="fi" id="pr-machine" placeholder="例: トラクター、管理機"></div>
+    <div class="fg"><label class="fl">作業時間(h)</label><input class="fi" type="number" id="pr-hours" placeholder="0" step="0.5" min="0"></div>
+  </div>
+  <div class="fg"><label class="fl">資材・投入量</label><input class="fi" id="pr-material" placeholder="例: 堆肥2t/10a、苦土石灰100kg"></div>
+  <div class="fg"><label class="fl">費用（円）</label><input class="fi" type="number" id="pr-cost" placeholder="0"></div>
+  <div class="fg"><label class="fl">メモ・観察</label><textarea class="ft" id="pr-memo" style="min-height:55px" placeholder="土の状態、特記事項など..."></textarea></div>
+  <div class="fg">
+    <label class="fl">写真</label>
+    <label class="btn btn-full" style="cursor:pointer;background:var(--g5);color:var(--g2);">
+      📷 写真を選ぶ
+      <input type="file" accept="image/*" multiple id="pr-photos" style="display:none" onchange="previewPhotos(this,'pr-photo-preview')">
+    </label>
+    <div id="pr-photo-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-prep')">キャンセル</button>
+    <button class="btn btn-primary" onclick="savePrep()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 農薬・肥料 -->
+<div class="overlay hidden" id="mo-input"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-input-title">💊 農薬・肥料の使用を記録</div>
+  <input type="hidden" id="input-eid">
+  <div class="fg"><label class="fl">日付 *</label><input class="fi" type="date" id="i-date"></div>
+  <div class="fg"><label class="fl">種類</label>
+    <select class="fs" id="i-type">
+      <option value="農薬">💊 農薬（殺虫剤・殺菌剤）</option><option value="除草剤">🌿 除草剤</option>
+      <option value="肥料">🌱 肥料</option><option value="土壌改良">🪨 土壌改良材</option><option value="その他">📌 その他</option>
+    </select>
+  </div>
+  <div class="fg"><label class="fl">製品名 *</label><input class="fi" id="i-product" placeholder="例: アドマアヤー水和剤、ようりん"></div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">使用量</label><input class="fi" type="number" id="i-amount" placeholder="0" step="0.1"></div>
+    <div class="fg"><label class="fl">単位</label>
+      <select class="fs" id="i-unit">
+        <option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option>
+        <option value="L">L</option><option value="袋">袋</option><option value="本">本</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">希釈倍率・散布量</label><input class="fi" id="i-dilution" placeholder="例: 1000倍希釈、10L/10a"></div>
+  <div class="fg"><label class="fl">目的・対象病害虫</label><input class="fi" id="i-target" placeholder="例: アブラムシ防除、元肥"></div>
+  <div class="fg"><label class="fl">メモ</label><textarea class="ft" id="i-memo" style="min-height:50px"></textarea></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-input')">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveInput()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 収穫・出荷 -->
+<div class="overlay hidden" id="mo-harvest"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-harvest-title">🚚 収穫・出荷を記録</div>
+  <input type="hidden" id="harvest-eid">
+  <div class="fg"><label class="fl">日付 *</label><input class="fi" type="date" id="h-date"></div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">収穫量</label><input class="fi" type="number" id="h-amount" placeholder="0" step="0.1"></div>
+    <div class="fg"><label class="fl">単位</label>
+      <select class="fs" id="h-unit">
+        <option value="kg">kg</option><option value="g">g</option><option value="個">個</option>
+        <option value="箱">箱</option><option value="袋">袋</option><option value="束">束</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">等級</label>
+    <select class="fs" id="h-grade"><option value="">未選択</option><option value="秀">秀</option><option value="優">優</option><option value="良">良</option><option value="規格外">規格外</option></select>
+  </div>
+  <div class="fg"><label class="fl">出荷先</label><input class="fi" id="h-buyer" placeholder="例: JA、道の駅、直売所、自家消費"></div>
+  <div class="fg"><label class="fl">売上金額（円）</label><input class="fi" type="number" id="h-price" placeholder="0"></div>
+  <div class="fg"><label class="fl">メモ</label><textarea class="ft" id="h-memo" style="min-height:50px"></textarea></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-harvest')">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveHarvest()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 作付計画 -->
+<div class="overlay hidden" id="mo-plan"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-plan-title">📅 作業予定を追加</div>
+  <input type="hidden" id="plan-eid">
+  <div class="fg"><label class="fl">作業内容 *</label>
+    <select class="fs" id="p-task">
+      <option value="土壌分析">🧪 土壌分析</option><option value="堆肥投入">♻️ 堆肥投入</option>
+      <option value="石灰施用">🪨 石灰施用</option><option value="耕うん">🚜 耕うん</option>
+      <option value="畝立て・マルチ">📏 畝立て・マルチ</option><option value="播種">🌱 播種</option>
+      <option value="育苗">🪴 育苗</option><option value="定植">🌿 定植</option>
+      <option value="元肥施肥">🌱 元肥施肥</option><option value="追肥">💧 追肥</option>
+      <option value="農薬散布">💊 農薬散布</option><option value="除草">✂️ 除草</option>
+      <option value="かん水">💧 かろ水</option><option value="誘引・整枝">🪢 誘引・整枝</option>
+      <option value="収穫開始">🌾 収穫開始</option><option value="出荷">🚚 出荷</option>
+      <option value="片付け・残渣処理">♻️ 片付け</option><option value="その他">📌 その他</option>
+    </select>
+  </div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">予定日 *</label><input class="fi" type="date" id="p-date"></div>
+    <div class="fg"><label class="fl">実施日</label><input class="fi" type="date" id="p-actual"></div>
+  </div>
+  <div class="fg"><label class="fl">メモ</label><textarea class="ft" id="p-memo" style="min-height:50px" placeholder="詳細、注意事項など..."></textarea></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-plan')">キャンセル</button>
+    <button class="btn btn-primary" onclick="savePlan()">💾 保存</button>
+  </div>
+</div></div>
+
+<!-- 圃場 -->
+<div class="overlay hidden" id="mo-field"><div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="mo-field-title">🌾 圃場を登録</div>
+  <input type="hidden" id="field-eid">
+  <div class="fg"><label class="fl">圃場名 *</label><input class="fi" id="f-name" placeholder="例: 第1圃場、北の畑"></div>
+  <div class="grid2">
+    <div class="fg"><label class="fl">面積（アール）</label><input class="fi" type="number" id="f-area" placeholder="0.0" step="0.1"></div>
+    <div class="fg"><label class="fl">土質</label>
+      <select class="fs" id="f-soil"><option value="">未選択</option><option value="砂壌土">砂壌土</option><option value="壌土">壌土</option><option value="粘土質">粘土質</option><option value="黒ボク">黒ボク</option></select>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">メモ</label><textarea class="ft" id="f-memo" style="min-height:50px"></textarea></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="closeModal('mo-field')">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveField()">💾 保存</button>
+  </div>
+</div></div>
+
+<div class="viewer hidden" id="viewer">
+  <button class="viewer-close" onclick="closeViewer()">✕</button>
+  <img id="viewer-img">
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DB ───────────────────────────────────────────
+const DB={
+  get(k,d=[]){try{return JSON.parse(localStorage.getItem('farm3_'+k))??d}catch{return d}},
+  set(k,v){localStorage.setItem('farm3_'+k,JSON.stringify(v))},
+  id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+};
+
+// ─── STATE ────────────────────────────────────────
+const S={screen:'crops',dtab:'diary',cropId:null,calY:new Date().getFullYear(),calM:new Date().getMonth(),calSel:today()};
+let pendingPhotos={d:[],pr:[]};
+
+function today(){const d=new Date();return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
+function p2(n){return String(n).padStart(2,'0')}
+function fmtDate(ds){if(!ds)return'';const[y,m,d]=ds.split('-');return`${y}年${+m}月${+d}日`}
+function daysBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-new Date(a))/86400000)}
+
+// ─── NAVIGATION ───────────────────────────────────
+function goScreen(sc,el){
+  document.getElementById('dtabs').style.display='none';
+  document.getElementById('bnav').style.display='flex';
+  document.getElementById('hdr-right').innerHTML='';
+  document.getElementById('hdr-left').innerHTML=`<div class="hdr-title">🌾 農場管理</div><div class="hdr-sub" id="hdr-date"></div>`;
+  setHeaderDate();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sc-'+sc).classList.add('active');
+  if(el)el.classList.add('active'); else document.getElementById('nav-'+sc)?.classList.add('active');
+  S.screen=sc;
+  if(sc==='crops')renderCrops();
+  if(sc==='cal'){renderCalendar();renderCalEvents();}
+  if(sc==='review'){updateReviewSelect();renderReview();}
+  if(sc==='fields')renderFields();
+}
+
+function openCropDetail(cropId){
+  S.cropId=cropId;
+  const crop=DB.get('crops').find(c=>c.id===cropId);
+  if(!crop)return;
+  document.getElementById('dtabs').style.display='flex';
+  document.getElementById('bnav').style.display='none';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-detail').classList.add('active');
+  document.getElementById('hdr-left').innerHTML=`<button class="back-btn" onclick="goScreen('crops')">← 一覧へ</button>`;
+  document.getElementById('hdr-right').innerHTML=`
+    <div style="text-align:right;max-width:180px">
+      <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(crop.name)} ${crop.variety?`<span style="font-size:11px;opacity:.8">${esc(crop.variety)}</span>`:''}</div>
+      <div style="font-size:11px;opacity:.75">${crop.year||''}年 ${statusLabel(crop.status)}</div>
+    </div>`;
+  switchDTab(S.dtab||'diary',null);
+}
+
+function switchDTab(tab,el){
+  S.dtab=tab;
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('vw-'+tab).classList.add('active');
+  const renders={diary:renderDiary,prep:renderPrep,inputs:renderInputs,harvest:renderHarvestDetail,plan:renderPlan,overview:renderOverview};
+  renders[tab]&&renders[tab]();
+}
+
+// ─── CROP HELPERS ─────────────────────────────────
+const CROP_ICON_MAP={米:'🌾',稲:'🌾',トマト:'🍅',ミニトマト:'🍅',キャベツ:'🥬',白菜:'🥬',ニンジン:'🥕',とうもろこし:'🌽',玉ねぎ:'🧅',オス:'🍆',ピーマン:'🫑',きゅうり:'🥒',いちご:'🍓',ぶどう:'🍇',りんご:'🍎',ブロッコリー:'🥦',枝豆:'🫘',大豆:'🫘',じゃがいも:'🥔',さてまいも:'🍠',スイカ:'🍉',メロン:'🍈',かぼちゃ:'🎃',ぷうれん草:'🥬',小松菜:'🥬',レタス:'🥬',ねぎ:'🧅',しょうが:'🫚',にんにく:'🧄'};
+function cropIcon(name){for(const k of Object.keys(CROP_ICON_MAP)){if(name&&name.includes(k))return CROP_ICON_MAP[k];}return'🌱';}
+function statusLabel(s){return{計画中:'📋',圃場準備中:'🚜',栽培中:'🌿',収穫期:'🍅',収穫済:'✅',終了:'🏁'}[s]||'';}
+function statusBadgeClass(s){return{計画中:'b-blue',圃場準備中:'b-brown',栽培中:'b-green',収穫期:'b-amber',収穫済:'b-gray',終了:'b-gray'}[s]||'b-gray';}
+
+// ─── CROPS ────────────────────────────────────────
+function saveCrop(){
+  const name=document.getElementById('c-name').value.trim();
+  if(!name){showToast('作物名を入力してください');return;}
+  const eid=document.getElementById('crop-eid').value;
+  const crops=DB.get('crops');
+  const crop={id:eid||DB.id(),name,variety:document.getElementById('c-variety').value.trim(),
+    year:document.getElementById('c-year').value,fieldId:document.getElementById('c-field').value,
+    plantDate:document.getElementById('c-plant').value,harvestPlan:document.getElementById('c-harvest-plan').value,
+    status:document.getElementById('c-status').value,memo:document.getElementById('c-memo').value.trim()};
+  if(eid){const i=crops.findIndex(c=>c.id===eid);if(i>=0)crops[i]=crop;}else crops.push(crop);
+  DB.set('crops',crops);closeModal('mo-crop');renderCrops();showToast(eid?'更新しました':'作物を登録しました');
+}
+
+function editCrop(id,e){
+  e&&e.stopPropagation();
+  const c=DB.get('crops').find(x=>x.id===id);if(!c)return;
+  document.getElementById('crop-eid').value=id;
+  document.getElementById('c-name').value=c.name||'';document.getElementById('c-variety').value=c.variety||'';
+  document.getElementById('c-year').value=c.year||new Date().getFullYear();
+  populateFieldSelect('c-field',c.fieldId);
+  document.getElementById('c-plant').value=c.plantDate||'';document.getElementById('c-harvest-plan').value=c.harvestPlan||'';
+  document.getElementById('c-status').value=c.status||'栽培中';document.getElementById('c-memo').value=c.memo||'';
+  document.getElementById('mo-crop-title').textContent='✏️ 作物を編集';openModal('mo-crop');
+}
+
+function deleteCrop(id,e){
+  e&&e.stopPropagation();
+  if(!confirm('この作物と全ての関連記録を削除しますか？'))return;
+  DB.set('crops',DB.get('crops').filter(c=>c.id!==id));
+  ['diary','preps','inputs','harvests','plans'].forEach(k=>DB.set(k,DB.get(k).filter(r=>r.cropId!==id)));
+  renderCrops();showToast('削除しました');
+}
+
+function renderCrops(){
+  const crops=DB.get('crops'),fields=DB.get('fields');
+  const active=crops.filter(c=>c.status!=='収穫済'&&c.status!=='終了');
+  const past=crops.filter(c=>c.status==='収穫済'||c.status==='終了');
+  const thisYear=new Date().getFullYear();
+  const thisYearSales=DB.get('harvests').filter(h=>h.date&&h.date.startsWith(thisYear)).reduce((s,h)=>s+(h.price||0),0);
+  document.getElementById('crop-stats-row').innerHTML<`<div class="stats-row">
+    <div class="stat-card"><div class="stat-val">${crops.filter(c=>['栽培中','収穫期','圃場準備中'].includes(c.status)).length}</div><div class="stat-lbl">稼働中作物</div></div>
+    <div class="stat-card"><div class="stat-val">${active.length}</div><div class="stat-lbl">管理中</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:16px">¥${thisYearSales.toLocaleString()}</div><div class="stat-lbl">今年売上</div></div>
+  </div>`;
+  const el=document.getElementById('crop-list-active');
+  el.innerHTML=active.length?active.map(c=>cropCard(c,fields)).join('')
+    :'<div class="empty"><div class="empty-ico">🌱</div><div class="empty-txt">作物が登録されていません<br>「＋ 作物を登録」から始めましょう</div></div>';
+  const pastEl=document.getElementById('past-crops-section');
+  pastEl.innerHTML=past.length?`<div class="sec">過去の作物（収穫済・終了）</div>`+past.map(c=>cropCard(c,fields)).join(''):'';
+}
+
+function cropCard(c,fields){
+  const field=fields.find(f=>f.id===c.fieldId);
+  const diaries=DB.get('diary').filter(d=>d.cropId===c.id);
+  const plans=DB.get('plans').filter(p=>p.cropId===c.id&&!p.actualDate&&p.date>=today());
+  const preps=DB.get('preps').filter(p=>p.cropId===c.id);
+  const lastDiary=[...diaries].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const lastPrep=[...preps].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const nextPlan=plans.sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const days=c.plantDate?daysBetween(c.plantDate,today()):null;
+  const recentActivity=lastDiary||lastPrep;
+  return`<div class="crop-card" onclick="openCropDetail('${c.id}')">
+    <div class="crop-icon" style="background:var(--g5)">${cropIcon(c.name)}</div>
+    <div class="crop-body">
+      <div class="crop-name">${esc(c.name)}</div>
+      <div style="font-size:12px;color:var(--muted)">${c.variety?esc(c.variety)+'　':''}${c.year||''}年</div>
+      <div class="crop-meta">
+        <span class="badge ${statusBadgeClass(c.status)}">${c.status}</span>
+        ${field?`<span class="badge b-gray">${esc(field.name)}</span>`:''}
+        ${days!==null?`<span style="font-size:11px;color:var(--muted)">${days>=0?days+'日目':'定植前'}</span>`:''}
+      </div>
+      ${recentActivity?`<div style="font-size:12px;color:var(--muted);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastDiary?'📒 '+lastDiary.stage:'🚜 '+lastPrep.type} — ${fmtDate((lastDiary||lastPrep).date)}</div>`:''}
+      ${nextPlan?`<div style="font-size:12px;color:#92400e;margin-top:3px">📅 次: ${esc(nextPlan.task)} (${fmtDate(nextPlan.date)})</div>`:''}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+      <button class="btn btn-icon btn-sm" onclick="editCrop('${c.id}',event)">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCrop('${c.id}',event)">🗑️</button>
+    </div>
+  </div>`;
+}
+
+// ─── PHOTO HELPER ─────────────────────────────────
+function previewPhotos(input,previewId){
+  const key=previewId.startsWith('d')?'d':'pr';
+  pendingPhotos[key]=[];
+  const prev=document.getElementById(previewId);
+  prev.innerHTML='<div style="font-size:12px;color:var(--muted)">読み込み中...</div>';
+  const files=Array.from(input.files);let done=0;
+  if(!files.length){prev.innerHTML='';return;}
+  files.forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{pendingPhotos[key].push(e.target.result);done++;
+      if(done===files.length)prev.innerHTML=pendingPhotos[key].map(d=>`<img src="${d}" style="width:56px;height:56px;border-radius:8px;object-fit:cover">`).join('');
+    };r.readAsDataURL(f);
+  });
+}
+
+// ─── DIARY ────────────────────────────────────────
+function saveDiary(){
+  const date=document.getElementById('d-date').value;
+  if(!date){showToast('日付を選択してください');return;}
+  const eid=document.getElementById('diary-eid').value;
+  const diaries=DB.get('diary');
+  const existing=eid?diaries.find(d=>d.id===eid):null;
+  const entry={id:eid||DB.id(),cropId:S.cropId,date,
+    stage:document.getElementById('d-stage').value,
+    notes:document.getElementById('d-notes').value.trim(),
+    photos:eid?(existing?.photos||[]):(pendingPhotos.d.length?pendingPhotos.d:[])};
+  if(eid){const i=diaries.findIndex(d=>d.id===eid);if(i>=0)diaries[i]=entry;}else diaries.push(entry);
+  DB.set('diary',diaries);pendingPhotos.d=[];closeModal('mo-diary');renderDiary();showToast('日誌を保存しました');
+}
+
+function editDiary(id){
+  const d=DB.get('diary').find(x=>x.id===id);if(!d)return;
+  document.getElementById('diary-eid').value=id;document.getElementById('d-date').value=d.date||'';
+  document.getElementById('d-stage').value=d.stage||'📝 観察・点検';document.getElementById('d-notes').value=d.notes||'';
+  document.getElementById('d-photo-preview').innerHTML='';pendingPhotos.d=[];
+  document.getElementById('mo-diary-title').textContent='✏️ 日誌を編集';openModal('mo-diary');
+}
+
+function deleteDiary(id){if(!confirm('この日誌を削除しますか？'))return;DB.set('diary',DB.get('diary').filter(d=>d.id!==id));renderDiary();showToast('削除しました');}
+
+function renderDiary(){
+  const entries=DB.get('diary').filter(d=>d.cropId===S.cropId).sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('diary-list');
+  if(!entries.length){el.innerHTML='<div class="empty"><div class="empty-ico">📒</div><div class="empty-txt">生育日誌がありません<br>観察・点検の記録をつしましょう</div></div>';return;}
+  el.innerHTML<`<div class="timeline">${entries.map(e=>`<div class="tl-item">
+    <div class="tl-dot"></div>
+    <div class="tl-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="tl-date">${fmtDate(e.date)}</div>
+          <div class="tl-stage">${esc(e.stage||'')}</div>
+          ${e.notes?`<div class="tl-notes">${esc(e.notes)}</div>`:''}
+          ${e.photos?.length?`<div class="tl-photos">${e.photos.map((p,i)=>`<img class="tl-thumb" src="${p}" onclick="openViewer('${p}')">`).join('')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px;flex-shrink:0">
+          <button class="btn btn-icon btn-sm" onclick="editDiary('${e.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDiary('${e.id}')">🗑️</button>
+        </div>
+      </div>
+    </div></div>`).join('')}</div>`;
+}
+
+// ─── PREP (圃場準備) ──────────────────────────────
+function savePrep(){
+  const date=document.getElementById('pr-date').value;
+  if(!date){showToast('日付を選択してください');return;}
+  const eid=document.getElementById('prep-eid').value;
+  const preps=DB.get('preps');
+  const existing=eid?preps.find(p=>p.id===eid):null;
+  const p={id:eid||DB.id(),cropId:S.cropId,date,
+    type:document.getElementById('pr-type').value,
+    machine:document.getElementById('pr-machine').value.trim(),
+    hours:parseFloat(document.getElementById('pr-hours').value)||0,
+    material:document.getElementById('pr-material').value.trim(),
+    cost:parseInt(document.getElementById('pr-cost').value)||0,
+    memo:document.getElementById('pr-memo').value.trim(),
+    photos:eid?(existing?.photos||[]):(pendingPhotos.pr.length?pendingPhotos.pr:[])};
+  if(eid){const i=preps.findIndex(x=>x.id===eid);if(i>=0)preps[i]=p;}else preps.push(p);
+  DB.set('preps',preps);pendingPhotos.pr=[];closeModal('mo-prep');renderPrep();showToast('圃場準備を記録しました');
+}
+
+function editPrep(id){
+  const p=DB.get('preps').find(x=>x.id===id);if(!p)return;
+  document.getElementById('prep-eid').value=id;document.getElementById('pr-date').value=p.date||'';
+  document.getElementById('pr-type').value=p.type||'耕うん（プラウ）';
+  document.getElementById('pr-machine').value=p.machine||'';document.getElementById('pr-hours').value=p.hours||'';
+  document.getElementById('pr-material').value=p.material||'';document.getElementById('pr-cost').value=p.cost||'';
+  document.getElementById('pr-memo').value=p.memo||'';
+  document.getElementById('pr-photo-preview').innerHTML='';pendingPhotos.pr=[];
+  document.getElementById('mo-prep-title').textContent='✏️ 圃場準備を編集';openModal('mo-prep');
+}
+
+function deletePrep(id){if(!confirm('この記録を削除しますか？'))return;DB.set('preps',DB.get('preps').filter(p=>p.id!==id));renderPrep();showToast('削除しました');}
+
+const PREP_ICONS={'h��うん（プラウ）':'🚜','耕うん（ロータリー）':'🔄','サブソイラー作業':'🔩','土壌分析':'🧪','石灰・苦土施用':'🪨','堆肥投入':'♻️','緑肥すき込み':'🌿','畝立て':'📏','マルチ張り':'🎿','灌水設備設置':'💧','ハウス準備':'🏠','除草（耕起前）':'✂️','前作残渣処理':'♻️','排水溝整備':'💦','その他':'📌'};
+
+function renderPrep(){
+  const items=DB.get('preps').filter(p=>p.cropId===S.cropId).sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('prep-list');
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-ico">🚜</div><div class="empty-txt">圃場準備の記録がありません<br>耕うん・土づくりを記録しましょう</div></div>';return;}
+  el.innerHTML<`<div class="timeline">${items.map(p=>`<div class="tl-item">
+    <div class="tl-dot prep"></div>
+    <div class="tl-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="tl-date">${fmtDate(p.date)}</div>
+          <div class="tl-stage">${PREP_ICONS[p.type]||'🚜'} ${esc(p.type)}</div>
+          ${p.machine?`<div style="font-size:12px;color:var(--muted)">🔧 ${esc(p.machine)}${p.hours?' / '+p.hours+'時間':''}</div>`:''}
+          ${p.material?`<div style="font-size:12px;color:var(--muted)">📦 ${esc(p.material)}</div>`:''}
+          ${p.cost?`<div style="font-size:12px;color:var(--muted)">💴 ¥${p.cost.toLocaleString()}</div>`:''}
+          ${p.memo?`<div class="tl-notes" style="margin-top:4px">${esc(p.memo)}</div>`:''}
+          ${p.photos?.length?`<div class="tl-photos">${p.photos.map(ph=>`<img class="tl-thumb" src="${ph}" onclick="openViewer('${ph}')">`).join('')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px;flex-shrink:0">
+          <button class="btn btn-icon btn-sm" onclick="editPrep('${p.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePrep('${p.id}')">🗑️</button>
+        </div>
+      </div>
+    </div></div>`).join('')}</div>`;
+}
+
+// ─── INPUTS ───────────────────────────────────────
+const INPUT_ICONS={農薬:'💊',除草剤:'🌿',肥料:'🌱',土壌改良:'🪨',その他:'📌'};
+
+function saveInput(){
+  const date=document.getElementById('i-date').value,product=document.getElementById('i-product').value.trim();
+  if(!date||!product){showToast('日付と製品名を入力してください');return;}
+  const eid=document.getElementById('input-eid').value,inputs=DB.get('inputs');
+  const inp={id:eid||DB.id(),cropId:S.cropId,date,type:document.getElementById('i-type').value,product,
+    amount:parseFloat(document.getElementById('i-amount').value)||0,unit:document.getElementById('i-unit').value,
+    dilution:document.getElementById('i-dilution').value.trim(),target:document.getElementById('i-target').value.trim(),
+    memo:document.getElementById('i-memo').value.trim()};
+  if(eid){const i=inputs.findIndex(x=>x.id===eid);if(i>=0)inputs[i]=inp;}else inputs.push(inp);
+  DB.set('inputs',inputs);closeModal('mo-input');renderInputs();showToast('記録しました');
+}
+
+function editInput(id){
+  const x=DB.get('inputs').find(i=>i.id===id);if(!x)return;
+  document.getElementById('input-eid').value=id;document.getElementById('i-date').value=x.date||'';
+  document.getElementById('i-type').value=x.type||'農薬';document.getElementById('i-product').value=x.product||'';
+  document.getElementById('i-amount').value=x.amount||'';document.getElementById('i-unit').value=x.unit||'g';
+  document.getElementById('i-dilution').value=x.dilution||'';document.getElementById('i-target').value=x.target||'';
+  document.getElementById('i-memo').value=x.memo||'';document.getElementById('mo-input-title').textContent='✏️ 記録を編集';openModal('mo-input');
+}
+
+function deleteInput(id){if(!confirm('この記録を削除しますか？'))return;DB.set('inputs',DB.get('inputs').filter(i=>i.id!==id));renderInputs();showToast('削除しました');}
+
+function renderInputs(){
+  const items=DB.get('inputs').filter(i=>i.cropId===S.cropId).sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('input-list');
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-ico">💊</div><div class="empty-txt">農薬・肥料の記録がありません</div></div>';return;}
+  el.innerHTML=items.map(x=>`<div class="li">
+    <div class="li-icon">${INPUT_ICONS[x.type]||'📌'}</div>
+    <div class="li-body">
+      <div class="li-title">${esc(x.product)}</div>
+      <div class="li-sub">${fmtDate(x.date)} <span class="badge b-gray">${x.type}</span></div>
+      ${x.amount?`<div style="font-size:12px;color:var(--muted)">${x.amount}${x.unit}${x.dilution?' / '+esc(x.dilution):''}</div>`:''}
+      ${x.target?`<div style="font-size:12px;color:var(--muted)">対象: ${esc(x.target)}</div>`:''}
+      ${x.memo?`<div style="font-size:12px;color:var(--muted)">${esc(x.memo)}</div>`:''}
+    </div>
+    <div class="li-actions">
+      <button class="btn btn-icon btn-sm" onclick="editInput('${x.id}')">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteInput('${x.id}')">🗑️</button>
+    </div>
+  </div>`).join('');
+}
+
+// ─── HARVEST ──────────────────────────────────────
+function saveHarvest(){
+  const date=document.getElementById('h-date').value;
+  if(!date){showToast('日付を入力してください');return;}
+  const eid=document.getElementById('harvest-eid').value,harvests=DB.get('harvests');
+  const h={id:eid||DB.id(),cropId:S.cropId,date,amount:parseFloat(document.getElementById('h-amount').value)||0,
+    unit:document.getElementById('h-unit').value,grade:document.getElementById('h-grade').value,
+    buyer:document.getElementById('h-buyer').value.trim(),price:parseInt(document.getElementById('h-price').value)||0,
+    memo:document.getElementById('h-memo').value.trim()};
+  if(eid){const i=harvests.findIndex(x=>x.id===eid);if(i>=0)harvests[i]=h;}else harvests.push(h);
+  DB.set('harvests',harvests);closeModal('mo-harvest');renderHarvestDetail();showToast('記録しました');
+}
+
+function editHarvestItem(id){
+  const h=DB.get('harvests').find(x=>x.id===id);if(!h)return;
+  document.getElementById('harvest-eid').value=id;document.getElementById('h-date').value=h.date||'';
+  document.getElementById('h-amount').value=h.amount||'';document.getElementById('h-unit').value=h.unit||'kg';
+  document.getElementById('h-grade').value=h.grade||'';document.getElementById('h-buyer').value=h.buyer||'';
+  document.getElementById('h-price').value=h.price||'';document.getElementById('h-memo').value=h.memo||'';
+  document.getElementById('mo-harvest-title').textContent='✏️ 収穫記録を編集';openModal('mo-harvest');
+}
+
+function deleteHarvestItem(id){if(!confirm('削除しますか？'))return;DB.set('harvests',DB.get('harvests').filter(h=>h.id!==id));renderHarvestDetail();showToast('削除しました');}
+
+function renderHarvestDetail(){
+  const items=DB.get('harvests').filter(h=>h.cropId===S.cropId).sort((a,b)=>b.date.localeCompare(a.date));
+  const totalAmt=items.reduce((s,h)=>s+(h.amount||0),0);
+  const totalPrice=items.reduce((s,h)=>s+(h.price||0),0);
+  const units=[...new Set(items.map(h=>h.unit).filter(Boolean))];
+  document.getElementById('harvest-summary').innerHTML<`<div class="stats-row">
+    <div class="stat-card"><div class="stat-val">${items.length}</div><div class="stat-lbl">収穫回数</div></div>
+    <div class="stat-card"><div class="stat-val">${totalAmt.toFixed(1)}<span style="font-size:13px">${units[0]||'kg'}</span></div><div class="stat-lbl">総収穫量</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:16px">¥${totalPrice.toLocaleString()}</div><div class="stat-lbl">総売上</div></div>
+  </div>`;
+  const el=document.getElementById('harvest-list');
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-ico">🚚</div><div class="empty-txt">収穫・出荷の記録がありません</div></div>';return;}
+  el.innerHTML=items.map(h=>`<div class="li">
+    <div class="li-icon">🌾</div>
+    <div class="li-body">
+      <div class="li-title">${fmtDate(h.date)} ${h.grade?`<span class="badge b-amber">${h.grade}</span>`:''}</div>
+      <div class="li-sub">${h.amount?h.amount+h.unit+' ':''}${h.price?'¥'+h.price.toLocaleString():''}</div>
+      ${h.buyer?`<div style="font-size:12px;color:var(--muted)">出荷先: ${esc(h.buyer)}</div>`:''}
+      ${h.memo?`<div style="font-size:12px;color:var(--muted)">${esc(h.memo)}</div>`:''}
+    </div>
+    <div class="li-actions">
+      <button class="btn btn-icon btn-sm" onclick="editHarvestItem('${h.id}')">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteHarvestItem('${h.id}')">🗑️</button>
+    </div>
+  </div>`).join('');
+}
+
+// ─── PLAN ─────────────────────────────────────────
+function savePlan(){
+  const date=document.getElementById('p-date').value;
+  if(!date){showToast('予定日を入力してください');return;}
+  const eid=document.getElementById('plan-eid').value,plans=DB.get('plans');
+  const p={id:eid||DB.id(),cropId:S.cropId,date,task:document.getElementById('p-task').value,
+    actualDate:document.getElementById('p-actual').value,memo:document.getElementById('p-memo').value.trim()};
+  if(eid){const i=plans.findIndex(x=>x.id===eid);if(i>=0)plans[i]=p;}else plans.push(p);
+  DB.set('plans',plans);closeModal('mo-plan');renderPlan();showToast('予定を保存しました');
+}
+
+function togglePlan(id){
+  const plans=DB.get('plans'),p=plans.find(x=>x.id===id);if(!p)return;
+  p.actualDate=p.actualDate?'':today();DB.set('plans',plans);renderPlan();
+}
+
+function editPlan(id){
+  const p=DB.get('plans').find(x=>x.id===id);if(!p)return;
+  document.getElementById('plan-eid').value=id;document.getElementById('p-date').value=p.date||'';
+  document.getElementById('p-task').value=p.task||'播種';document.getElementById('p-actual').value=p.actualDate||'';
+  document.getElementById('p-memo').value=p.memo||'';document.getElementById('mo-plan-title').textContent='✏️ 予定を編集';openModal('mo-plan');
+}
+
+function deletePlan(id){if(!confirm('削除しますか？'))return;DB.set('plans',DB.get('plans').filter(p=>p.id!==id));renderPlan();showToast('削除しました');}
+
+function renderPlan(){
+  const plans=DB.get('plans').filter(p=>p.cropId===S.cropId).sort((a,b)=>a.date.localeCompare(b.date));
+  const el=document.getElementById('plan-list');
+  if(!plans.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">作業予定がありません<br>土づくりから収穫まで計画を立てましょう</div></div>';return;}
+  const t=today();
+  el.innerHTML=plans.map(p=>{
+    const done=!!p.actualDate,overdue=!done&&p.date<t,upcoming=!done&&daysBetween(t,p.date)<=7&&p.date>=t;
+    return`<div class="plan-item ${overdue?'plan-overdue':upcoming?'plan-upcoming':''} ${done?'plan-done-item':''}">
+      <div class="plan-check ${done?'done':''}" onclick="togglePlan('${p.id}')">${done?'✓':''}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(p.task)}</div>
+        <div style="font-size:12px;color:var(--muted)">予定: ${fmtDate(p.date)}${done?' → 実施: '+fmtDate(p.actualDate):''}
+          ${overdue?'<span style="color:var(--red);font-weight:600;margin-left:4px">⚠️ 遅延</span>':''}
+          ${upcoming&&!done?'<span style="color:var(--amber);font-weight:600;margin-left:4px">今週</span>':''}</div>
+        ${p.memo?`<div style="font-size:12px;color:var(--muted)">${esc(p.memo)}</div>`:''}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-icon btn-sm" onclick="editPlan('${p.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── OVERVIEW ─────────────────────────────────────
+function renderOverview(){
+  const crop=DB.get('crops').find(c=>c.id===S.cropId);if(!crop){document.getElementById('overview-content').innerHTML='';return;}
+  const field=DB.get('fields').find(f=>f.id===crop.fieldId);
+  const diaries=DB.get('diary').filter(d=>d.cropId===S.cropId);
+  const preps=DB.get('preps').filter(p=>p.cropId===S.cropId);
+  const inputs=DB.get('inputs').filter(i=>i.cropId===S.cropId);
+  const harvests=DB.get('harvests').filter(h=>h.cropId===S.cropId);
+  const plans=DB.get('plans').filter(p=>p.cropId===S.cropId);
+  const totalH=harvests.reduce((s,h)=>s+(h.amount||0),0);
+  const totalS=harvests.reduce((s,h)=>s+(h.price||0),0);
+  const totalCost=preps.reduce((s,p)=>s+(p.cost||0),0);
+  const days=crop.plantDate?daysBetween(crop.plantDate,today()):null;
+  const daysToH=crop.harvestPlan?daysBetween(today(),crop.harvestPlan):null;
+  document.getElementById('overview-content').innerHTML=`
+    <div class="card" style="border-left:4px solid var(--g3)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px">${cropIcon(crop.name)} ${esc(crop.name)} ${crop.variety?`<span style="font-size:12px;color:var(--muted)">${esc(crop.variety)}</span>`:''}</div>
+      <div class="ry-row"><div class="ry-key">状態</div><div class="ry-val"><span class="badge ${statusBadgeClass(crop.status)}">${crop.status}</span></div></div>
+      <div class="ry-row"><div class="ry-key">作付年</div><div class="ry-val">${crop.year||'未設定'}年</div></div>
+      <div class="ry-row"><div class="ry-key">圃場</div><div class="ry-val">${field?esc(field.name):'未設定'}</div></div>
+      <div class="ry-row"><div class="ry-key">播種・定植日</div><div class="ry-val">${crop.plantDate?fmtDate(crop.plantDate):'未設定'}</div></div>
+      ${days!==null?`<div class="ry-row"><div class="ry-key">生育日数</div><div class="ry-val" style="color:var(--g2)">${days>=0?days+'日目':'定植前'}</div></div>`:''}
+      <div class="ry-row"><div class="ry-key">収穫予定</div><div class="ry-val">${crop.harvestPlan?fmtDate(crop.harvestPlan):'未設定'}</div></div>
+      ${daysToH!==null?`<div class="ry-row"><div class="ry-key">収穫まで</div><div class="ry-val" style="color:${daysToH<0?'var(--red)':'var(--amber)'}">${daysToH<0?Math.abs(daysToH)+'日超過':daysToH+'日後'}</div></div>`:''}
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${preps.length}</div><div class="stat-lbl">圃場準備</div></div>
+      <div class="stat-card"><div class="stat-val">${diaries.length}</div><div class="stat-lbl">日誌件数</div></div>
+      <div class="stat-card"><div class="stat-val">${inputs.length}</div><div class="stat-lbl">農薬・肥料</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${totalH.toFixed(1)}</div><div class="stat-lbl">収穫量(kg)</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:16px">¥${totalS.toLocaleString()}</div><div class="stat-lbl">売上</div></div>
+      <div class="stat-card"><div class="stat-val">${plans.length>0?Math.round(plans.filter(p=>p.actualDate).length/plans.length*100)+'%':'—'}</div><div class="stat-lbl">計画達成率</div></div>
+    </div>
+    ${totalCost>0?`<div class="card"><div style="font-size:13px;color:var(--muted)">圃場準備費用合計</div><div style="font-size:20px;font-weight:700;color:var(--g2)">¥${totalCost.toLocaleString()}</div></div>`:''}
+    ${crop.memo?`<div class="card"><div class="card-title">📝 メモ</div><div style="font-size:14px;line-height:1.6;margin-top:6px">${esc(crop.memo)}</div></div>`:''}
+  `;
+}
+
+// ─── CALENDAR ─────────────────────────────────────
+function renderCalendar(){
+  const {calY:y,calM:m,calSel:sel}=S;
+  const allDates=new Set([...DB.get('diary').map(d=>d.date),...DB.get('harvests').map(h=>h.date),...DB.get('plans').map(p=>p.date),...DB.get('inputs').map(i=>i.date),...DB.get('preps').map(p=>p.date)]);
+  const t=today();const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  let html=`<div class="cal-hdr"><button class="cal-nav" onclick="chCal(-1)">‹</button><strong>${y}年 ${months[m]}</strong><button class="cal-nav" onclick="chCal(1)">›</button></div><div class="cal-grid">`;
+  ['日','月','火','水','木','金','土'].forEach(d=>{html+=`<div class="cal-dh">${d}</div>`;});
+  for(let i=0;i<first.getDay();i++){const d=new Date(y,m,-first.getDay()+i+1);html+=`<div class="cal-d om">${d.getDate()}</div>`;}
+  for(let d=1;d<=last.getDate();d++){const ds=`${y}-${p2(m+1)}-${p2(d)}`;html+=`<div class="cal-d ${ds===t?'today':''} ${ds===sel&&ds!==t?'sel':''} ${allDates.has(ds)?'has-ev':''}" onclick="selCal('${ds}')">${d}</div>`;}
+  html+='</div>';document.getElementById('main-cal').innerHTML=html;
+}
+function chCal(d){S.calM+=d;if(S.calM>11){S.calM=0;S.calY++;}if(S.calM<0){S.calM=11;S.calY--;}renderCalendar();}
+function selCal(ds){S.calSel=ds;renderCalendar();renderCalEvents();}
+
+function renderCalEvents(){
+  const ds=S.calSel;
+  const crops=DB.get('crops'),getCrop=id=>{const c=crops.find(x=>x.id===id);return c?esc(c.name):'?';};
+  const d=DB.get('diary').filter(x=>x.date===ds);
+  const pr=DB.get('preps').filter(x=>x.date===ds);
+  const inp=DB.get('inputs').filter(x=>x.date===ds);
+  const ha=DB.get('harvests').filter(x=>x.date===ds);
+  const pl=DB.get('plans').filter(x=>x.date===ds);
+  document.getElementById('cal-date-label').textContent=fmtDate(ds)+'のイベント';
+  let html='';
+  if(!d.length&&!pr.length&&!inp.length&&!ha.length&&!pl.length){html='<div class="empty" style="padding:20px"><div class="empty-txt">この日のイベントはありません</div></div>';}
+  if(pr.length)html+=`<div class="sec">🚜 圃場準備</div>`+pr.map(x=>`<div class="li"><div class="li-icon">🚜</div><div class="li-body"><div class="li-title">${getCrop(x.cropId)}: ${esc(x.type)}</div><div class="li-sub">${x.machine?esc(x.machine):''}${x.hours?' '+x.hours+'h':''}</div></div></div>`).join('');
+  if(d.length)html+=`<div class="sec">📒 生育日誌</div>`+d.map(x=>`<div class="li"><div class="li-icon">📒</div><div class="li-body"><div class="li-title">${getCrop(x.cropId)}: ${x.stage||''}</div><div class="li-sub">${x.notes?esc(x.notes.slice(0,40)):''}</div></div></div>`).join('');
+  if(inp.length)html+=`<div class="sec">💊 農薬・肥料</div>`+inp.map(x=>`<div class="li"><div class="li-icon">${INPUT_ICONS[x.type]||'📌'}</div><div class="li-body"><div class="li-title">${getCrop(x.cropId)}: ${esc(x.product)}</div><div class="li-sub"><span class="badge b-gray">${x.type}</span></div></div></div>`).join('');
+  if(ha.length)html+=`<div class="sec">🚚 収穫・出荷</div>`+ha.map(x=>`<div class="li"><div class="li-icon">🌾</div><div class="li-body"><div class="li-title">${getCrop(x.cropId)}: ${x.amount||0}${x.unit}</div><div class="li-sub">${x.buyer?esc(x.buyer):''}${x.price?' ¥'+x.price.toLocaleString():''}</div></div></div>`).join('');
+  if(pl.length)html+=`<div class="sec">📅 作業予定</div>`+pl.map(x=>`<div class="li"><div class="li-icon">📋</div><div class="li-body"><div class="li-title">${getCrop(x.cropId)}: ${esc(x.task)}</div><div class="li-sub">${x.actualDate?'✅ 実施済':'未実施'}</div></div></div>`).join('');
+  document.getElementById('cal-events').innerHTML=html;
+}
+
+// ─── REVIEW ───────────────────────────────────────
+function updateReviewSelect(){
+  const names=[...new Set(DB.get('crops').map(c=>c.name))].sort();
+  const sel=document.getElementById('review-crop-sel'),cur=sel.value;
+  sel.innerHTML='<option value="">選択してください</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+
+function renderReview(){
+  const name=document.getElementById('review-crop-sel').value,el=document.getElementById('review-content');
+  if(!name){el.innerHTML='';return;}
+  const crops=DB.get('crops').filter(c=>c.name===name).sort((a,b)=>(b.year||0)-(a.year||0));
+  if(!crops.length){el.innerHTML='<div class="empty"><div class="empty-txt">該当する作物が見つかりません</div></div>';return;}
+  const fields=DB.get('fields');
+  el.innerHTML=crops.map(c=>{
+    const field=fields.find(f=>f.id===c.fieldId);
+    const preps=DB.get('preps').filter(p=>p.cropId===c.id);
+    const diaries=DB.get('diary').filter(d=>d.cropId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
+    const inputs=DB.get('inputs').filter(i=>i.cropId===c.id);
+    const harvests=DB.get('harvests').filter(h=>h.cropId===c.id);
+    const plans=DB.get('plans').filter(p=>p.cropId===c.id);
+    const totalH=harvests.reduce((s,h)=>s+(h.amount||0),0);
+    const totalS=harvests.reduce((s,h)=>s+(h.price||0),0);
+    const prepCost=preps.reduce((s,p)=>s+(p.cost||0),0);
+    const firstHarvest=harvests.sort((a,b)=>a.date.localeCompare(b.date))[0];
+    const harvestDays=c.plantDate&&firstHarvest?daysBetween(c.plantDate,firstHarvest.date):null;
+    return`<div class="review-year-card">
+      <div class="ry-title">${c.year||'年不明'}年 <span style="font-size:12px;font-weight:400;color:var(--muted)">${field?esc(field.name):''}</span>
+        <span class="badge ${statusBadgeClass(c.status)}" style="margin-left:6px">${c.status}</span></div>
+      <div class="ry-row"><div class="ry-key">播種・定植</div><div class="ry-val">${c.plantDate?fmtDate(c.plantDate):'—'}</div></div>
+      <div class="ry-row"><div class="ry-key">収穫予定</div><div class="ry-val">${c.harvestPlan?fmtDate(c.harvestPlan):'—'}</div></div>
+      ${harvestDays!==null?`<div class="ry-row"><div class="ry-key">定植〜初収穫</div><div class="ry-val">${harvestDays}日</div></div>`:''}
+      <div class="ry-row"><div class="ry-key">圃場準備回数</div><div class="ry-val">${preps.length}回${prepCost>0?' / ¥'+prepCost.toLocaleString():''}</div></div>
+      <div class="ry-row"><div class="ry-key">農薬使用</div><div class="ry-val">${inputs.filter(i=>i.type==='農薬'||i.type==='除草剤').length}回</div></div>
+      <div class="ry-row"><div class="ry-key">施肥</div><div class="ry-val">${inputs.filter(i=>i.type==='肥料'||i.type==='土壌改良').length}回</div></div>
+      <div class="ry-row"><div class="ry-key">総収穫量</div><div class="ry-val">${totalH>0?totalH.toFixed(1)+' kg':'—'}</div></div>
+      <div class="ry-row"><div class="ry-key">総売上</div><div class="ry-val">${totalS>0?'¥'+totalS.toLocaleString():'—'}</div></div>
+      <div class="ry-row"><div class="ry-key">生育日誌</div><div class="ry-val">${diaries.length}件</div></div>
+      <div class="ry-row"><div class="ry-key">計画達成率</div><div class="ry-val">${plans.length>0?Math.round(plans.filter(p=>p.actualDate).length/plans.length*100)+'%':'—'}</div></div>
+      ${diaries.length?`<div class="ry-row"><div class="ry-key">初〜最終ステージ</div><div class="ry-val" style="font-size:12px">${diaries[0].stage||''} → ${diaries[diaries.length-1].stage||''}</div></div>`:''}
+      ${c.memo?`<div style="font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${esc(c.memo)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ─── FIELDS ───────────────────────────────────────
+function saveField(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){showToast('圃場名を入力してください');return;}
+  const eid=document.getElementById('field-eid').value,fields=DB.get('fields');
+  const f={id:eid||DB.id(),name,area:parseFloat(document.getElementById('f-area').value)||0,
+    soil:document.getElementById('f-soil').value,memo:document.getElementById('f-memo').value.trim()};
+  if(eid){const i=fields.findIndex(x=>x.id===eid);if(i>=0)fields[i]=f;}else fields.push(f);
+  DB.set('fields',fields);closeModal('mo-field');renderFields();showToast(eid?'更新しました':'圃場を追加しました');
+}
+
+function editField(id){
+  const f=DB.get('fields').find(x=>x.id===id);if(!f)return;
+  document.getElementById('field-eid').value=id;document.getElementById('f-name').value=f.name||'';
+  document.getElementById('f-area').value=f.area||'';document.getElementById('f-soil').value=f.soil||'';
+  document.getElementById('f-memo').value=f.memo||'';document.getElementById('mo-field-title').textContent='✏️ 圃場を編集';openModal('mo-field');
+}
+
+function deleteField(id){if(!confirm('削除しますか？'))return;DB.set('fields',DB.get('fields').filter(f=>f.id!==id));renderFields();showToast('削除しました');}
+
+function renderFields(){
+  const fields=DB.get('fields'),el=document.getElementById('field-list');
+  if(!fields.length){el.innerHTML='<div class="empty"><div class="empty-ico">🌾</div><div class="empty-txt">圃場が登録されていません</div></div>';return;}
+  el.innerHTML=fields.map(f=>`<div class="li"><div class="li-icon">🌾</div><div class="li-body"><div class="li-title">${esc(f.name)}</div><div class="li-sub">${f.area?f.area+'a ':''} ${f.soil?f.soil:''}</div>${f.memo?`<div style="font-size:12px;color:var(--muted)">${esc(f.memo)}</div>`:''}</div><div class="li-actions"><button class="btn btn-icon btn-sm" onclick="editField('${f.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteField('${f.id}')">🗑️</button></div></div>`).join('');
+}
+
+function populateFieldSelect(id,val){
+  const el=document.getElementById(id);
+  el.innerHTML='<option value="">圃場未指定</option>'+DB.get('fields').map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  if(val)el.value=val;
+}
+
+// ─── MODALS ───────────────────────────────────────
+function openModal(id){
+  const mo=document.getElementById(id);mo.classList.remove('hidden');
+  const dateMap={'mo-diary':'d-date','mo-input':'i-date','mo-harvest':'h-date','mo-plan':'p-date','mo-prep':'pr-date'};
+  if(dateMap[id]){const fi=document.getElementById(dateMap[id]);if(fi&&!fi.value)fi.value=today();}
+  if(id==='mo-crop'){
+    const yr=document.getElementById('c-year'),cur=new Date().getFullYear();
+    yr.innerHTML=[cur+1,cur,cur-1,cur-2,cur-3].map(y=>`<option value="${y}">${y}年</option>`).join('');
+    if(!document.getElementById('crop-eid').value){yr.value=cur;populateFieldSelect('c-field','');}
+  }
+  if(id==='mo-diary'&&!document.getElementById('diary-eid').value){
+    document.getElementById('d-notes').value='';document.getElementById('d-photo-preview').innerHTML='';
+    pendingPhotos.d=[];document.getElementById('mo-diary-title').textContent='📒 生育日誌を追加';
+  }
+  if(id==='mo-prep'&&!document.getElementById('prep-eid').value){
+    ['pr-machine','pr-material','pr-memo'].forEach(x=>document.getElementById(x).value='');
+    ['pr-hours','pr-cost'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('pr-photo-preview').innerHTML='';pendingPhotos.pr=[];
+    document.getElementById('mo-prep-title').textContent='🚜 圃場準備作業を記録';
+  }
+  if(id==='mo-input'&&!document.getElementById('input-eid').value){
+    ['i-product','i-dilution','i-target','i-memo'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('i-amount').value='';document.getElementById('mo-input-title').textContent='💊 農薬・肥料の使用を記録';
+  }
+  if(id==='mo-harvest'&&!document.getElementById('harvest-eid').value){
+    ['h-buyer','h-memo'].forEach(x=>document.getElementById(x).value='');
+    ['h-amount','h-price'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('h-grade').value='';document.getElementById('mo-harvest-title').textContent='🚚 収穫・出荷を記録';
+  }
+  if(id==='mo-plan'&&!document.getElementById('plan-eid').value){
+    document.getElementById('p-memo').value='';document.getElementById('p-actual').value='';
+    document.getElementById('mo-plan-title').textContent='📅 作業予定を追加';
+  }
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.add('hidden');
+  ['crop-eid','diary-eid','input-eid','harvest-eid','plan-eid','field-eid','prep-eid'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+}
+
+document.querySelectorAll('.overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.add('hidden');});});
+
+// ─── VIEWER ───────────────────────────────────────
+function openViewer(src){const v=document.getElementById('viewer');document.getElementById('viewer-img').src=src;v.classList.remove('hidden');}
+function closeViewer(){document.getElementById('viewer').classList.add('hidden');}
+
+// ─── UTILS ────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function setHeaderDate(){const d=new Date(),ws=['日','月','火','水','木','金','土'];const el=document.getElementById('hdr-date');if(el)el.textContent=`${d.getFullYear()}�t${d.getMonth()+1}月${d.getDate()}日(${ws[d.getDay()]})`;}
+
+// ─── INIT ─────────────────────────────────────────
+function init(){setHeaderDate();renderCrops();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});}
+init();
+</script>
+</body>
+</html>
