@@ -1,0 +1,18 @@
+{
+  "name": "農場管理アプリ",
+  "short_name": "農場管理",
+  "description": "圃場・作業・収穫・天気・写真を一元管理する農業管理アプリ",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fffe",
+  "theme_color": "#2d6a4f",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%232d6a4f'/%3E%3Ctext y='130' x='96' text-anchor='middle' font-size='100'%3E%F0%9F%8C%BE%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
